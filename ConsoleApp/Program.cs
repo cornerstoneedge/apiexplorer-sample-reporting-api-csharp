@@ -1,14 +1,13 @@
 ﻿using System;
-
 using Api;
 
 namespace ConsoleClient
 {
     internal class Program
     {
-        private const string ApiBaseAddress = "https://[portal].csod.com";//Enter the Portal for the Service        
-        private const string ClientId = "";//Enter the client id from the portal.        
-        private const string ClientSecret = "";//Enter the client secret from the portal.
+        private const string ApiBaseAddress = "https://[portal].csod.com"; //Enter the Portal for the Service        
+        private const string ClientId = ""; //Enter the client id from the portal.        
+        private const string ClientSecret = ""; //Enter the client secret from the portal.
         private const string ApiViewsPath = "/services/api/x/odata/api/views";
         private const int PrintLength = 500;
 
@@ -83,7 +82,8 @@ namespace ConsoleClient
         {
             Console.WriteLine("Getting metadata...");
             var stringContent = _client.GetStringAsync(new Uri($@"{ApiViewsPath}/$metadata", UriKind.Relative)).Result;
-            Console.WriteLine($"Response length is {stringContent.Length}. First {PrintLength} characters: {stringContent.Substring(0, PrintLength)}");
+            Console.WriteLine(
+                $"Response length is {stringContent.Length}. First {PrintLength} characters: {stringContent.Substring(0, PrintLength)}");
         }
 
         private static void HandleError(EdgeApiODataPayload payload)
@@ -96,7 +96,9 @@ namespace ConsoleClient
         private static void ExecuteCount()
         {
             Console.WriteLine("Getting only count from vw_rpt_user...");
-            var payload = _client.GetODataPayloadAsync(new Uri($@"{ApiViewsPath}/vw_rpt_user?$count=true&$top=0", UriKind.Relative)).Result;
+            var payload = _client
+                .GetODataPayloadAsync(new Uri($@"{ApiViewsPath}/vw_rpt_user?$count=true&$top=0", UriKind.Relative))
+                .Result;
             HandleError(payload);
             Console.WriteLine($"Got count {payload?.Count}");
         }
@@ -104,8 +106,11 @@ namespace ConsoleClient
         private static void ExecuteAllData()
         {
             Console.WriteLine("Getting all data from vw_rpt_user...");
-            var payload = _client.GetODataPayloadAsync(new Uri($@"{ApiViewsPath}/vw_rpt_user?$count=true&$top=0", UriKind.Relative)).Result;
-            payload = _client.GetODataPayloadAsync(new Uri($@"{ApiViewsPath}/vw_rpt_user", UriKind.Relative), (int)payload.Count).Result;
+            var payload = _client
+                .GetODataPayloadAsync(new Uri($@"{ApiViewsPath}/vw_rpt_user?$count=true&$top=0", UriKind.Relative))
+                .Result;
+            payload = _client.GetODataPayloadAsync(new Uri($@"{ApiViewsPath}/vw_rpt_user", UriKind.Relative),
+                (int) payload.Count).Result;
 
             HandleError(payload);
             Console.WriteLine($"Got {payload?.Value?.Count} values");
@@ -114,12 +119,13 @@ namespace ConsoleClient
         private static void ExecutePaging()
         {
             Console.WriteLine("Getting data from vw_rpt_user by pages...");
-            var payload = _client.GetODataPayloadAsync(new Uri($@"{ApiViewsPath}/vw_rpt_user", UriKind.Relative), 10).Result;
+            var payload = _client.GetODataPayloadAsync(new Uri($@"{ApiViewsPath}/vw_rpt_user", UriKind.Relative), 10)
+                .Result;
             HandleError(payload);
             Console.WriteLine($"Got {payload?.Value?.Count} values");
             Console.WriteLine($"Next link is '{payload?.NextLink}'");
 
-            var address = payload.NextLink.Replace(ApiBaseAddress, String.Empty);
+            var address = payload.NextLink.Replace(ApiBaseAddress, string.Empty);
             Console.WriteLine("Getting data by next link...");
             payload = _client.GetODataPayloadAsync(new Uri(address, UriKind.Relative), 10).Result;
             HandleError(payload);

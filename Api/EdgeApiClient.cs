@@ -4,12 +4,10 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -20,19 +18,19 @@ namespace Api
         private const string AuthorizationHeaderName = "Authorization";
         private const string PreferHeaderName = "prefer";
         private const string GrantType = "client_credentials";
-        private const string Scope = "all";        
+        private const string Scope = "all";
         private readonly Uri _baseUri;
         private readonly string _clientId;
         private readonly string _clientSecret;
 
         private readonly Dictionary<string, string> _dictionary;
-
-        private bool _initialized;
         private string _accessToken;
 
         private HttpClient _client;
+
+        private bool _initialized;
         private string _requestBody;
-        
+
         public EdgeApiClient(Uri baseUri, string clientId, string clientSecret)
         {
             _baseUri = baseUri;
@@ -55,7 +53,6 @@ namespace Api
             var headers = new NameValueCollection
             {
                 {AuthorizationHeaderName, GetAccessTokenValue()}
-
             };
 
             if (maxPageSize.HasValue)
@@ -72,7 +69,8 @@ namespace Api
                 return content;
             }
 
-            throw new Exception($"Response by URI '{relativeUri}' is '{(int)response.StatusCode}' '{response.ReasonPhrase}' with content '{content}'");
+            throw new Exception(
+                $"Response by URI '{relativeUri}' is '{(int) response.StatusCode}' '{response.ReasonPhrase}' with content '{content}'");
         }
 
         public async Task<EdgeApiODataPayload> GetODataPayloadAsync(Uri uri, int? maxPageSize = null)
@@ -89,7 +87,8 @@ namespace Api
             var errorMatch = Regex.Match(stringContent, ",?({\"error\":{.*}})");
             if (errorMatch.Success)
             {
-                errorValue = JsonConvert.DeserializeObject<EdgeApiErrorValue>(errorMatch.Groups[1].Value, serializerSettings);
+                errorValue =
+                    JsonConvert.DeserializeObject<EdgeApiErrorValue>(errorMatch.Groups[1].Value, serializerSettings);
                 stringContent = stringContent.Remove(errorMatch.Index) + "]}";
             }
 
@@ -109,7 +108,7 @@ namespace Api
             {
                 BaseAddress = _baseUri,
                 // Set timeout to infinite because Edge API service has its own timeout.
-                Timeout = Timeout.InfiniteTimeSpan,
+                Timeout = Timeout.InfiniteTimeSpan
             };
 
             _client.DefaultRequestHeaders.Accept.Clear();
@@ -119,7 +118,7 @@ namespace Api
                                                    | SecurityProtocolType.Tls
                                                    | SecurityProtocolType.Tls11
                                                    | SecurityProtocolType.Tls12;
-            var stsUri = new Uri($@"/services/api/oauth2/token", UriKind.Relative);
+            var stsUri = new Uri(@"/services/api/oauth2/token", UriKind.Relative);
 
             BuildRequestBodyJSON(_dictionary);
 
@@ -127,7 +126,7 @@ namespace Api
             {
                 RequestUri = stsUri,
                 Method = HttpMethod.Post,
-                Content = new StringContent(_requestBody,Encoding.UTF8, "application/json")
+                Content = new StringContent(_requestBody, Encoding.UTF8, "application/json")
             };
 
             var headers = new NameValueCollection
@@ -141,12 +140,13 @@ namespace Api
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                _accessToken = ((JObject)JsonConvert.DeserializeObject<dynamic>(content))["access_token"].ToString();
+                _accessToken = ((JObject) JsonConvert.DeserializeObject<dynamic>(content))["access_token"].ToString();
                 _initialized = true;
                 return;
             }
 
-            throw new Exception($"Initialization failed with '{(int)response.StatusCode}' '{response.ReasonPhrase}' '{response.Content.ReadAsStringAsync().Result}'.");
+            throw new Exception(
+                $"Initialization failed with '{(int) response.StatusCode}' '{response.ReasonPhrase}' '{response.Content.ReadAsStringAsync().Result}'.");
         }
 
         private void AddHeadersToRequest(NameValueCollection headers, HttpRequestMessage request)
@@ -156,6 +156,7 @@ namespace Api
                 request.Headers.Add(key, headers[key]);
             }
         }
+
         private void BuildRequestParameters()
         {
             try
@@ -164,7 +165,6 @@ namespace Api
                 _dictionary.Add("clientSecret", _clientSecret);
                 _dictionary.Add("grantType", GrantType);
                 _dictionary.Add("scope", Scope);
-
             }
             catch (Exception ex)
             {
@@ -174,28 +174,30 @@ namespace Api
 
         private void BuildRequestBodyJSON(Dictionary<string, string> dictionary)
         {
-            StringBuilder _sbParameters = new StringBuilder();
-            char doublequotes = '"';
-            int max = 0;
+            var _sbParameters = new StringBuilder();
+            var doublequotes = '"';
+            var max = 0;
             _sbParameters.AppendLine("{");
-            foreach (string param in dictionary.Keys)
+            foreach (var param in dictionary.Keys)
             {
-                _sbParameters.Append(doublequotes + param + doublequotes);//key => parameter name 
+                _sbParameters.Append(doublequotes + param + doublequotes); //key => parameter name 
                 _sbParameters.Append(':');
-                _sbParameters.Append(doublequotes + dictionary[param] + doublequotes);//key value                
+                _sbParameters.Append(doublequotes + dictionary[param] + doublequotes); //key value                
                 if (max < dictionary.Keys.Count - 1)
                 {
                     _sbParameters.Append(",");
                 }
+
                 _sbParameters.AppendLine("");
                 max++;
             }
+
             _requestBody = _sbParameters.AppendLine("}").ToString();
         }
+
         private string GetAccessTokenValue()
         {
             return "Bearer " + _accessToken;
         }
-
     }
 }
